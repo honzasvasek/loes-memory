@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Loes · lokaal geheugen</title><link rel="stylesheet" href="/assets/style.css"><script src="/assets/manage.js" defer></script></head>
+<body><main><h1>Loes · lokaal geheugen</h1><p>Persoonlijke herinneringen op deze computer. Alleen relevante selectie gaat naar Loes.</p>
+<p id="status" role="status"></p>
+<section><h2>Herinnering toevoegen</h2><form id="add"><label>Type <select name="type"><option value="profile">Profiel</option><option value="episodic">Episodisch</option></select></label><label>Herinnering<textarea name="text" required maxlength="1000" rows="3"></textarea></label><label>Belang (0–1) <input name="importance" type="number" min="0" max="1" step="0.05" value="0.5" required></label><button>Toevoegen</button></form></section>
+<section><h2>Herinneringen</h2><form id="search"><input id="query" type="search" placeholder="Zoeken" aria-label="Zoeken"><select id="filter" aria-label="Filter type"><option value="">Alle types</option><option value="profile">Profiel</option><option value="episodic">Episodisch</option></select><button>Zoeken</button></form><div id="memories"></div></section>
+</main></body></html>
