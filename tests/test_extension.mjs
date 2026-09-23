@@ -5,7 +5,7 @@ import fs from 'node:fs';
 
 function harness(memories = ['Gebruiker gebruikt Linux.']) {
   const listeners = new Set(), events = [], calls = [];
-  const context = {console: {debug() {}, warn() {}}, Request, URL, DOMException, crypto, setTimeout, clearTimeout, location: {href: 'https://chat.loes.ai/c/chat1', origin: 'https://chat.loes.ai'}};
+  const context = {console: {debug() {}, warn() {}}, Request, URL, DOMException, crypto, setTimeout, clearTimeout, setInterval, clearInterval, location: {href: 'https://chat.loes.ai/c/chat1', origin: 'https://chat.loes.ai'}};
   context.window = {
     addEventListener(type, fn) { listeners.add(fn); },
     removeEventListener(type, fn) { listeners.delete(fn); },

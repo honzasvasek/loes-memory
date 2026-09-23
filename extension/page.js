@@ -8,6 +8,8 @@
   const origin = location.origin;
   const configReady = new Promise(resolve => {
     let timer;
+    let retry;
+    const requestConfig = () => window.postMessage({source: 'loes-memory-page', action: 'config', id: 'config'}, origin);
     const listener = event => {
       if (event.source !== window || event.origin !== origin ||
           event.data?.source !== 'loes-memory-content' || event.data.action !== 'config') return;
@@ -15,16 +17,19 @@
       if (!config || config.origin !== origin || !Array.isArray(config.completionPaths) ||
           !Number.isFinite(config.recallTimeoutMs)) return;
       clearTimeout(timer);
+      clearInterval(retry);
       window.removeEventListener('message', listener);
       resolve(config);
     };
     window.addEventListener('message', listener);
     timer = setTimeout(() => {
       window.removeEventListener('message', listener);
+      clearInterval(retry);
       console.warn('[loes-memory] Configuratie ontbreekt. Herlaad de extension en daarna deze tab.');
       resolve(null);
     }, 4000);
-    window.postMessage({source: 'loes-memory-page', action: 'config', id: 'config'}, origin);
+    requestConfig();
+    retry = setInterval(requestConfig, 250);
   });
   const originalFetch = window.fetch;
   const emit = detail => window.postMessage({source: 'loes-memory-page', ...detail}, origin);
