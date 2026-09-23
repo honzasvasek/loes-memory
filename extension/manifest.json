@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Loes lokaal geheugen",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Lokaal persoonlijk geheugen voor chat.loes.ai",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5ke70Z+ovS4y6UYYaVRuekYgjt3nOxQmjgqJZ8jcB9I/ACVilkSaKiYiCKKk1LAZBCvNStO8SnwyJmMpQn985AFYm0Op/eBS33pFvmDcDn9rTsjJXJoeEsWfh+xTsjUVWk4G9PPK10N96tFkOYPbGW/1Fjhc/Sjq6JE9Vn3V6WltqjWvR5nLTWCBWjoQBdzluD+TdRVVRKPJJ3k/Kpc4Fbj17UDPcX7dipj9RvTydfP2+WJ2c1O90FO9Vb2q0O0Ok7I3NCHWSmRZXguO8KW6TLrfkw25UmP8AlmvPf77UwGUvY1ZYc3zveo/4iRLTBdTVU94Lvlpzs8IjecuFXR3LwIDAQAB",
   "host_permissions": [
@@ -26,7 +26,6 @@
         "https://chat.loes.ai/*"
       ],
       "js": [
-        "config.js",
         "page.js"
       ],
       "run_at": "document_start",

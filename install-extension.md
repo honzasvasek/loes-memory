@@ -20,3 +20,9 @@ De extension leest geen cookies en vraagt geen Loes-API-key. Laat `manifest.json
 DevTools → Console toont berichten met `[loes-memory]`, zonder gespreksteksten. `queued` betekent dat de observatie lokaal is aangenomen; controleer `/health` en de daemonterminal bij ontbrekende memories. De eerste model-load kan een recalltimeout veroorzaken; chatten gaat dan zonder context door.
 
 Na codewijzigingen: klik **Reload** bij de extension en herlaad de Loes-tab. Werkt de DOM-detectie niet meer, pas de centrale selectors in `config.js` aan. Deze proof-of-concept ondersteunt de standaard Open WebUI-fetchroute; de daadwerkelijke Loes-versie moet met bovenstaande proef gecontroleerd worden.
+
+## Update 0.1.1: geladen maar geen geheugenactiviteit
+
+Versie 0.1.0 kon stilzwijgend alle prompts overslaan doordat Chrome `config.js` niet opnieuw uitvoerde in de tweede scriptomgeving. Versie 0.1.1 draagt de configuratie expliciet over. Na bijwerken moet je **zowel de extension als de Loes-tab herladen**. Controleer dat de extensionkaart versie 0.1.1 toont.
+
+Na een verzonden tekstbericht zie je in de Loes-console (zet ook Debug/Verbose aan) `[loes-memory] Chatprompt doorgestuurd met ... herinneringen.` Na het antwoord volgt `Lokale observatie: queued`. Bij een leeg geheugen is nul herinneringen normaal; de observatie moet wel plaatsvinden. Verborgen configuratie- en verbindingsfouten geven nu een waarschuwing.

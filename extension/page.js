@@ -3,10 +3,32 @@
  */
 (() => {
   'use strict';
-  const config = globalThis.LOES_MEMORY_CONFIG;
+  // Chrome deduplicates identical content-script files across manifest entries,
+  // even when their worlds differ. Receive the central config from ISOLATED.
+  const origin = location.origin;
+  const configReady = new Promise(resolve => {
+    let timer;
+    const listener = event => {
+      if (event.source !== window || event.origin !== origin ||
+          event.data?.source !== 'loes-memory-content' || event.data.action !== 'config') return;
+      const config = event.data.config;
+      if (!config || config.origin !== origin || !Array.isArray(config.completionPaths) ||
+          !Number.isFinite(config.recallTimeoutMs)) return;
+      clearTimeout(timer);
+      window.removeEventListener('message', listener);
+      resolve(config);
+    };
+    window.addEventListener('message', listener);
+    timer = setTimeout(() => {
+      window.removeEventListener('message', listener);
+      console.warn('[loes-memory] Configuratie ontbreekt. Herlaad de extension en daarna deze tab.');
+      resolve(null);
+    }, 4000);
+    window.postMessage({source: 'loes-memory-page', action: 'config', id: 'config'}, origin);
+  });
   const originalFetch = window.fetch;
-  const emit = detail => window.postMessage({source: 'loes-memory-page', ...detail}, config.origin);
-  function recall(id, message) {
+  const emit = detail => window.postMessage({source: 'loes-memory-page', ...detail}, origin);
+  function recall(config, id, message) {
     return new Promise(resolve => {
       let timer;
       const finish = memories => { clearTimeout(timer); window.removeEventListener('message', listener); resolve(memories); };
@@ -22,6 +44,8 @@
     });
   }
   window.fetch = async function(input, init) {
+    const config = await configReady;
+    if (!config) return originalFetch.call(this, input, init);
     let request, payload;
     try {
       const url = new URL(input instanceof Request ? input.url : input, location.href);
@@ -29,7 +53,10 @@
       request = new Request(input instanceof Request ? input.clone() : input, init);
       if (request.method !== 'POST') return originalFetch.call(this, input, init);
       payload = await request.clone().json();
-    } catch { return originalFetch.call(this, input, init); }
+    } catch (error) {
+      console.warn('[loes-memory] Chatpayload niet leesbaar:', error.name);
+      return originalFetch.call(this, input, init);
+    }
     const messages = payload.messages;
     // Exclude continuations, title generation and non-chat internal requests.
     if (!Array.isArray(messages) || messages.at(-1)?.role !== 'user' || !payload.id || !payload.chat_id) return originalFetch.call(this, input, init);
@@ -38,7 +65,7 @@
     const user = typeof last.content === 'string' ? last.content : part?.text;
     if (!user?.trim() || user.length > 30000) return originalFetch.call(this, input, init);
     const id = crypto.randomUUID();
-    const memories = await recall(id, user);
+    const memories = await recall(config, id, user);
     if (request.signal.aborted) throw new DOMException('Aborted', 'AbortError');
     const safeMemories = memories.map(m => m.replaceAll(/\[\/?(?:Lokale persoonlijke context|Gebruiker)\]/g, '').slice(0, 1000));
     // Daemon owns the configurable selection budget; bridge enforces a hard upper bound.

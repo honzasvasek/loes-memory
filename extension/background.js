@@ -17,6 +17,6 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   }).then(async response => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     reply({ok: true, data: await response.json()});
-  }).catch(error => { console.warn('[loes-memory] Lokaal geheugen onbereikbaar:', error.name); reply({ok: false}); });
+  }).catch(error => { console.warn('[loes-memory] Lokaal geheugen onbereikbaar:', error.message); reply({ok: false}); });
   return true;
 });

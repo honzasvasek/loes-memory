@@ -27,11 +27,18 @@
   };
   async function rpc(action, body) {
     try { return await chrome.runtime.sendMessage({action, body}); }
-    catch { return {ok: false}; }
+    catch (error) { console.warn('[loes-memory] Extensionverbinding verbroken:', error.name, 'Herlaad deze tab.'); return {ok: false}; }
+  }
+  function sendConfig() {
+    window.postMessage({source: 'loes-memory-content', action: 'config', config: {
+      origin: config.origin, completionPaths: config.completionPaths,
+      recallTimeoutMs: config.recallTimeoutMs,
+    }}, config.origin);
   }
   window.addEventListener('message', async event => {
     const data = event.data;
     if (event.source !== window || event.origin !== config.origin || data?.source !== 'loes-memory-page' || typeof data.id !== 'string') return;
+    if (data.action === 'config') { sendConfig(); return; }
     if (data.action === 'recall' && typeof data.message === 'string' && data.message.length <= 30000) {
       const result = await rpc('recall', {message: data.message});
       if (!result?.ok) console.warn('[loes-memory] Recall niet beschikbaar; normaal chatten zonder context.');
@@ -77,6 +84,7 @@
       void observe(turn, text);
     }
   }
+  sendConfig();
   let scheduled = false;
   const observer = new MutationObserver(() => {
     if (scheduled) return;

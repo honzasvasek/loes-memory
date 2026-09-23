@@ -5,12 +5,15 @@ import fs from 'node:fs';
 
 function harness(memories = ['Gebruiker gebruikt Linux.']) {
   const listeners = new Set(), events = [], calls = [];
-  const context = {console: {debug() {}}, Request, URL, DOMException, crypto, setTimeout, clearTimeout, location: {href: 'https://chat.loes.ai/c/chat1'}};
+  const context = {console: {debug() {}, warn() {}}, Request, URL, DOMException, crypto, setTimeout, clearTimeout, location: {href: 'https://chat.loes.ai/c/chat1', origin: 'https://chat.loes.ai'}};
   context.window = {
     addEventListener(type, fn) { listeners.add(fn); },
     removeEventListener(type, fn) { listeners.delete(fn); },
     postMessage(data) {
       events.push(data);
+      if (data.action === 'config') queueMicrotask(() => {
+        for (const fn of listeners) fn({source: context.window, origin: 'https://chat.loes.ai', data: {source: 'loes-memory-content', action: 'config', config: context.LOES_MEMORY_CONFIG}});
+      });
       if (data.action === 'recall') queueMicrotask(() => {
         for (const fn of listeners) fn({source: context.window, origin: 'https://chat.loes.ai', data: {source: 'loes-memory-content', id: data.id, memories}});
       });
@@ -52,7 +55,7 @@ test('unrelated calls and assistant continuations are not intercepted', async ()
   await h.context.window.fetch('https://chat.loes.ai/api/v1/chats', {method: 'POST', body: '{}'});
   const payload = body(); payload.messages.push({role: 'assistant', content: 'continue'});
   await h.context.window.fetch('https://chat.loes.ai/api/chat/completions', {method: 'POST', body: JSON.stringify(payload)});
-  assert.equal(h.events.length, 0); assert.equal(h.calls.length, 2);
+  assert.equal(h.events.filter(e => e.action !== 'config').length, 0); assert.equal(h.calls.length, 2);
 });
 test('cancelled request never reaches Loes', async () => {
   const h = harness(), controller = new AbortController(); controller.abort();

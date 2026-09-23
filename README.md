@@ -25,7 +25,7 @@ Het embeddingmodel wordt **nooit automatisch gedownload tijdens chatten**. Het d
 
 ## Werking
 
-1. `page.js` onderschept uitsluitend `fetch` naar de bekende Open WebUI-completionpaden op chat.loes.ai. Alleen gewone chatrequests met `chat_id`, antwoord-`id` en een laatste user-bericht worden behandeld.
+1. `content.js` geeft de centrale configuratie via een gecontroleerde `postMessage`-handshake door aan `page.js`. `config.js` staat alleen in de geïsoleerde scriptomgeving: Chrome kan hetzelfde bestand in meerdere manifestblokken overslaan, ook als de scriptwerelden verschillen. `page.js` onderschept uitsluitend `fetch` naar de bekende Open WebUI-completionpaden op chat.loes.ai. Alleen gewone chatrequests met `chat_id`, antwoord-`id` en een laatste user-bericht worden behandeld.
 2. `content.js` vraagt via de extension-serviceworker `/recall` op. De daemon selecteert standaard maximaal vijf relevante herinneringen, maximaal 2.000 tekens.
 3. Alleen de laatste user-tekst in de netwerkpayload krijgt de geselecteerde context. Het invoerveld en de weergegeven gebruikersprompt worden niet aangepast. Bijlagen, eerdere berichten en de bestaande sessie blijven intact. De extension leest of bewaart geen credentials.
 4. Een `MutationObserver` volgt het antwoord met de bijbehorende message-ID. Alleen stabiele tekst met een completionmarker wordt doorgestuurd naar `/observe`. Pauzes tijdens streaming zijn op zichzelf geen completionmarker. Knoppen, verborgen tekst en `details` (zoals redeneringen) worden uitgesloten.
@@ -100,11 +100,12 @@ Extractie en semantische deduplicatie zijn heuristisch. Een gewijzigde voorkeur 
 
 ```bash
 .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/playwright install chromium
 .venv/bin/python -m pytest -q
 node --test tests/test_extension.mjs
 ```
 
-Node is uitsluitend nodig voor de JS-tests, niet om de toepassing te gebruiken. De DOM-test gebruikt een lokale HTML-fixture in headless Chrome (`/usr/bin/google-chrome`); geen account of netwerkverkeer naar Loes. Pas dit pad aan als Chrome elders staat. Servertests gebruiken deterministische testembeddings en een test-LLM, zodat API-logica offline controleerbaar is.
+Node is uitsluitend nodig voor de JS-tests, niet om de toepassing te gebruiken. De DOM-test gebruikt een lokale HTML-fixture in headless Chrome (`/usr/bin/google-chrome`); geen account of netwerkverkeer naar Loes. Pas dit pad aan als Chrome elders staat. De aanvullende test `tests/test_extension_browser.py` laadt de echte Manifest V3-extension in een apart Chromium-profiel en test recall, contextinjectie, afgeronde observatie, deduplicatie en daemonuitval via een echte lokale HTTP-server. Alle Loes-responses zijn fixtures; er gaat geen verkeer naar Loes en er worden geen echte chats gebruikt. Stel eventueel `PLAYWRIGHT_CHROMIUM_EXECUTABLE` in op een al geïnstalleerde Chromium-testbinary. Servertests gebruiken deterministische testembeddings en een test-LLM, zodat API-logica offline controleerbaar is.
 
 Bronnen voor de integratie: [Chrome content-scriptwerelden](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts), [serviceworker-netwerkrequests](https://developer.chrome.com/docs/extensions/develop/concepts/network-requests), [Open WebUI chatclient](https://github.com/open-webui/open-webui/blob/main/src/lib/apis/openai/index.ts), [Open WebUI antwoord-DOM](https://github.com/open-webui/open-webui/blob/main/src/lib/components/chat/Messages/ResponseMessage.svelte), [Ollama structured outputs](https://docs.ollama.com/capabilities/structured-outputs).
 
