@@ -57,10 +57,14 @@
       console.warn('[loes-memory] Chatpayload niet leesbaar:', error.name);
       return originalFetch.call(this, input, init);
     }
-    const messages = payload.messages;
+    // Open WebUI has two payload shapes in the wild. Recent builds send the
+    // current message as `user_message` plus `message_ids`; older builds send
+    // a normal `messages` array plus `id`.
+    const messages = Array.isArray(payload.messages) ? payload.messages : null;
+    const last = messages?.at(-1) || payload.user_message;
+    const responseId = payload.id || payload.message_ids?.at(-1)?.message_id;
     // Exclude continuations, title generation and non-chat internal requests.
-    if (!Array.isArray(messages) || messages.at(-1)?.role !== 'user' || !payload.id || !payload.chat_id) return originalFetch.call(this, input, init);
-    const last = messages.at(-1);
+    if (!last || last.role !== 'user' || !responseId || !payload.chat_id) return originalFetch.call(this, input, init);
     const part = Array.isArray(last.content) ? last.content.find(p => p.type === 'text' && typeof p.text === 'string') : null;
     const user = typeof last.content === 'string' ? last.content : part?.text;
     if (!user?.trim() || user.length > 30000) return originalFetch.call(this, input, init);
@@ -77,7 +81,7 @@
       if (part) part.text = augmented; else last.content = augmented;
       request = new Request(request, {body: JSON.stringify(payload)});
     }
-    emit({action: 'sent', id, user, responseId: String(payload.id), chatId: String(payload.chat_id)});
+    emit({action: 'sent', id, user, responseId: String(responseId), chatId: String(payload.chat_id)});
     console.debug('[loes-memory] Chatprompt doorgestuurd met', selected.length, 'herinneringen.');
     request.signal.addEventListener('abort', () => emit({action: 'cancel', id}), {once: true});
     try {

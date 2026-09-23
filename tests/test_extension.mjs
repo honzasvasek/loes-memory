@@ -50,6 +50,21 @@ test('uploads preserved and text part augmented', async () => {
   assert.deepEqual(result.messages.at(-1).content[1], payload.messages.at(-1).content[1]);
   assert.match(result.messages.at(-1).content[0].text, /Lokale persoonlijke context/);
 });
+
+test('current Open WebUI user_message payload is augmented and tracked', async () => {
+  const h = harness();
+  const payload = {
+    chat_id: 'chat1',
+    user_message: {id: 'user1', role: 'user', content: 'Mijn vraag'},
+    message_ids: [{model_id: 'model', message_id: 'answer1'}],
+    messages: undefined,
+  };
+  await h.context.window.fetch('https://chat.loes.ai/api/chat/completions', {method: 'POST', body: JSON.stringify(payload)});
+  const result = await h.calls[0].json();
+  assert.match(result.user_message.content, /Lokale persoonlijke context/);
+  assert.equal(result.message_ids[0].message_id, 'answer1');
+  assert.equal(h.events.find(e => e.action === 'sent').responseId, 'answer1');
+});
 test('unrelated calls and assistant continuations are not intercepted', async () => {
   const h = harness();
   await h.context.window.fetch('https://chat.loes.ai/api/v1/chats', {method: 'POST', body: '{}'});
