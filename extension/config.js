@@ -2,6 +2,7 @@
 globalThis.LOES_MEMORY_CONFIG = Object.freeze({
   origin: 'https://chat.loes.ai', daemon: 'http://127.0.0.1:8765',
   completionPaths: ['/api/chat/completions', '/api/v1/chat/completions'],
+  contextMaxChars: 900,
   recallTimeoutMs: 4000, observeTimeoutMs: 120000, stableMs: 1500,
   responseTimeoutMs: 15 * 60 * 1000,
   selectors: {

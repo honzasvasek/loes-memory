@@ -36,6 +36,16 @@ class MemoryService:
         with self.lock, self.db.connect() as conn:
             return self._insert(conn, item, vector)
 
+    def import_memories(self, items):
+        # Embed before writing; one transaction makes failed imports all-or-nothing.
+        vectors = [self.embeddings.encode(item.text) for item in items]
+        with self.lock, self.db.connect() as conn:
+            # Also serialize against a running daemon / other import processes.
+            conn.execute('BEGIN IMMEDIATE')
+            added = sum(self._insert(conn, item, vector)[1]
+                        for item, vector in zip(items, vectors))
+        return {'added': added, 'duplicates': len(items) - added}
+
     def recall(self, message):
         rows = self.db.rows()
         if not rows:
@@ -55,6 +65,11 @@ class MemoryService:
         chosen, size = [], 0
         for _, row in sorted(ranked, key=lambda pair: pair[0], reverse=True):
             if size + len(row['text']) > self.settings.recall_max_chars:
+                continue
+            # Do not spend the context budget on paraphrases, even across types.
+            candidate = np.frombuffer(row['embedding'], dtype=np.float32)
+            if any(similarity(candidate, np.frombuffer(other['embedding'], dtype=np.float32))
+                   > self.settings.dedup_threshold for other in chosen):
                 continue
             chosen.append(row)
             size += len(row['text'])

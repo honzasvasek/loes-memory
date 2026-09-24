@@ -130,3 +130,11 @@ def test_observation_dedup_survives_restart(client):
 
 def test_no_cloud_model():
     with pytest.raises(ValueError): Settings(ollama_model='gemma4:cloud')
+
+
+def test_recall_omits_paraphrases_across_types(client):
+    c, app, _ = client
+    c.post('/memories', json={'type': 'profile', 'text': 'Linux desktop', 'importance': .9})
+    c.post('/memories', json={'type': 'episodic', 'text': 'Linux systeem', 'importance': .5})
+    assert len(c.get('/memories').json()) == 2
+    assert c.post('/recall', json={'message': 'Linux'}).json()['memories'] == ['Linux desktop']

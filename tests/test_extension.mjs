@@ -49,7 +49,7 @@ test('uploads preserved and text part augmented', async () => {
   await h.context.window.fetch('https://chat.loes.ai/api/chat/completions', {method: 'POST', body: JSON.stringify(payload)});
   const result = await h.calls[0].json();
   assert.deepEqual(result.messages.at(-1).content[1], payload.messages.at(-1).content[1]);
-  assert.match(result.messages.at(-1).content[0].text, /Lokale persoonlijke context/);
+  assert.match(result.messages.at(-1).content[0].text, /Geheugen: achtergrond/);
 });
 
 test('current Open WebUI user_message payload is augmented and tracked', async () => {
@@ -62,7 +62,7 @@ test('current Open WebUI user_message payload is augmented and tracked', async (
   };
   await h.context.window.fetch('https://chat.loes.ai/api/chat/completions', {method: 'POST', body: JSON.stringify(payload)});
   const result = await h.calls[0].json();
-  assert.match(result.user_message.content, /Lokale persoonlijke context/);
+  assert.match(result.user_message.content, /Geheugen: achtergrond/);
   assert.equal(result.message_ids[0].message_id, 'answer1');
   assert.equal(h.events.find(e => e.action === 'sent').responseId, 'answer1');
 });
@@ -100,4 +100,38 @@ test('background proxy rejects other sites and cannot fetch arbitrary URLs', asy
   assert.equal(response.ok, true);
   assert.equal(fetched.url, 'http://127.0.0.1:8765/recall');
   assert.equal(fetched.options.credentials, 'omit');
+});
+
+for (const memories of [[], ['Linux.', 'Linux.', 'x'.repeat(901)]]) {
+  test('nested Open WebUI wrappers process one turn once: ' + memories.length, async () => {
+    const h = harness(memories);
+    for (let i = 0; i < 2; i++) {
+      const previous = h.context.window.fetch;
+      h.context.window.fetch = async (input, init) => previous(new Request(input, init));
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    await h.context.window.fetch('https://chat.loes.ai/api/chat/completions',
+      {method: 'POST', body: JSON.stringify(body())});
+    assert.equal(h.calls.length, 1);
+    assert.equal(h.events.filter(e => e.action === 'recall').length, 1);
+    assert.equal(h.events.filter(e => e.action === 'sent').length, 1);
+    assert.equal(h.events.filter(e => e.action === 'accepted').length, 1);
+    const text = (await h.calls[0].json()).messages.at(-1).content;
+    assert.equal((text.match(/Geheugen: achtergrond/g) || []).length, memories.length ? 1 : 0);
+    assert.equal((text.match(/Linux\./g) || []).length, memories.length ? 1 : 0);
+    assert.ok(text.length < 1000);
+    assert.equal(h.events.find(e => e.action === 'sent').user, 'Mijn vraag');
+  });
+}
+
+test('old nested context is replaced, never sent to recall or observe', async () => {
+  const h = harness(['Nieuw feit.']), payload = body();
+  const block = '[Lokale persoonlijke context]\nOud feit\n[/Lokale persoonlijke context]\n\n[Gebruiker]\n';
+  payload.messages.at(-1).content = block.repeat(3) + 'Mijn vraag';
+  await h.context.window.fetch('https://chat.loes.ai/api/chat/completions',
+    {method: 'POST', body: JSON.stringify(payload)});
+  const text = (await h.calls[0].json()).messages.at(-1).content;
+  assert.ok(!text.includes('Oud feit'));
+  assert.equal(h.events.find(e => e.action === 'recall').message, 'Mijn vraag');
+  assert.equal(h.events.find(e => e.action === 'sent').user, 'Mijn vraag');
 });

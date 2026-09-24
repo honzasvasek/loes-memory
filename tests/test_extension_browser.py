@@ -81,6 +81,14 @@ def test_installed_extension_recall_observe_and_offline_fallback(tmp_path):
 
                 page.route('https://chat.loes.ai/**', fake_loes)
                 page.goto('https://chat.loes.ai/c/test-chat')
+                # Reproduce the actual site's nested fetch wrappers.
+                for _ in range(2):
+                    page.evaluate('''() => {
+                        const previous = window.fetch;
+                        window.fetch = (input, init) => previous(new Request(
+                            input instanceof Request ? input : new URL(input, location.href), init));
+                    }''')
+                    page.wait_for_timeout(350)
                 original = 'Geef me Linux-instructies.'
                 page.locator('#chat-input').fill(original)
                 send = '''async ({id, text}) => {
@@ -92,6 +100,8 @@ def test_installed_extension_recall_observe_and_offline_fallback(tmp_path):
                 page.evaluate(send, {'id': 'answer', 'text': original})
                 assert any(path == '/recall' and status == 200 for path, _, status in requests), logs
                 assert 'De gebruiker gebruikt Linux.' in payloads[0]['messages'][0]['content'], logs
+                assert len([p for p, _, _ in requests if p == '/recall']) == 1
+                assert payloads[0]['messages'][0]['content'].count('[Geheugen:') == 1
                 assert page.locator('#chat-input').inner_text() == original
                 page.evaluate('''() => {
                     document.querySelector('main').insertAdjacentHTML('beforeend',

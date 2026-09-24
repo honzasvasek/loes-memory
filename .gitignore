@@ -4,3 +4,7 @@ __pycache__/
 .pytest_cache/
 data/*
 !data/.gitkeep
+
+# Personal chatbot exports (never publish with the source code)
+/*.json
+/imports/

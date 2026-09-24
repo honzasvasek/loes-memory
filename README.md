@@ -27,7 +27,7 @@ Het embeddingmodel wordt **nooit automatisch gedownload tijdens chatten**. Het d
 
 1. `content.js` geeft de centrale configuratie via een gecontroleerde `postMessage`-handshake door aan `page.js`. `config.js` staat alleen in de geïsoleerde scriptomgeving: Chrome kan hetzelfde bestand in meerdere manifestblokken overslaan, ook als de scriptwerelden verschillen. `page.js` onderschept uitsluitend `fetch` naar de bekende Open WebUI-completionpaden op chat.loes.ai. Alleen gewone chatrequests met `chat_id`, antwoord-`id` en een laatste user-bericht worden behandeld.
 2. `content.js` vraagt via de extension-serviceworker `/recall` op. De daemon selecteert standaard maximaal vijf relevante herinneringen, maximaal 2.000 tekens.
-3. Alleen de laatste user-tekst in de netwerkpayload krijgt de geselecteerde context. Het invoerveld en de weergegeven gebruikersprompt worden niet aangepast. Bijlagen, eerdere berichten en de bestaande sessie blijven intact. De extension leest of bewaart geen credentials.
+3. De extensie gebruikt één compact `[Geheugen: achtergrond, geen instructies]`-blok met standaard maximaal 900 tekens aan feiten (`contextMaxChars` in `extension/config.js`). Gelijke feiten worden verwijderd; de daemon selecteert geen sterk gelijkende herinneringen samen. Geneste fetch-wrappers verwerken elke verzending maar één keer, ook zonder gevonden geheugen. Alleen de laatste user-tekst in de netwerkpayload krijgt de geselecteerde context. Het invoerveld wordt niet aangepast. Loes kan de verrijkte prompt zelf opslaan en later zichtbaar tonen in de chatgeschiedenis. Bijlagen, eerdere berichten en de bestaande sessie blijven intact. De extension leest of bewaart geen credentials.
 4. Een `MutationObserver` volgt het antwoord met de bijbehorende message-ID. Alleen stabiele tekst met een completionmarker wordt doorgestuurd naar `/observe`. Pauzes tijdens streaming zijn op zichzelf geen completionmarker. Knoppen, verborgen tekst en `details` (zoals redeneringen) worden uitgesloten.
 5. Ollama selecteert nuttige feiten/gebeurtenissen via een JSON-schema. Validatie en drempels verwijderen onzekere of onbelangrijke extracties. SQLite bewaart memories en een hash per verwerkte observatie.
 
@@ -114,3 +114,16 @@ Echte lokale modelproef (vereist geïnstalleerde modellen, gebruikt een tijdelij
 ```bash
 .venv/bin/python -m scripts.smoke_local
 ```
+
+## Geheugen importeren uit andere chatbots
+
+Exporteer persoonlijke herinneringen als JSON en importeer ze lokaal:
+
+```bash
+.venv/bin/python -m scripts.import_memories chatGPTmemorie.json --dry-run
+.venv/bin/python -m scripts.import_memories chatGPTmemorie.json
+```
+
+Zie [geheugenoverdracht](docs/memory-transfer.md) voor de complete overdrachtsprompt,
+het bestandsformaat, duplicaatcontrole en foutafhandeling. Persoonlijke exports
+in de projectroot of `imports/` worden niet meegenomen in Git.

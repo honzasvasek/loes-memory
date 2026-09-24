@@ -19,6 +19,8 @@ zet relatieve datums niet zonder bewijs om in exacte datums.
 WEL: gebruikt Linux; prefereert korte directe antwoorden; experimenteert met Loes.ai;
 organiseert regelmatig een Prompt Café; heeft besloten project X te stoppen.
 NIET: drinkt nu koffie; vandaag regent het; bedankt; algemene kennis; hele gesprekken;
+vragen over wat je al weet; tijdelijke testkleuren of technische integratietests;
+meegegeven geheugencontext (dat is geen nieuw feit); herhaling van assistant-antwoorden;
 geheimen, wachtwoorden, API-keys, cookies of credentials.
 Geef importance en confidence tussen 0 en 1. Bij niets nuttigs: {"memories":[]}.
 '''

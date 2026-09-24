@@ -32,7 +32,7 @@
   function sendConfig() {
     window.postMessage({source: 'loes-memory-content', action: 'config', config: {
       origin: config.origin, completionPaths: config.completionPaths,
-      recallTimeoutMs: config.recallTimeoutMs,
+      recallTimeoutMs: config.recallTimeoutMs, contextMaxChars: config.contextMaxChars,
     }}, config.origin);
   }
   window.addEventListener('message', async event => {
